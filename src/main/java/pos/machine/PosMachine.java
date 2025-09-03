@@ -25,8 +25,8 @@ public class PosMachine {
 
     public Receipt calculateCost(List<ReceiptItem> receiptItems) {
         List<ReceiptItem> receiptItems1 = calculateItemsCost(receiptItems);
-
-        return null;
+        int totalPrice = calculateTotalPrice(receiptItems1);
+        return new Receipt(receiptItems1, totalPrice);
     }
 
     public List<ReceiptItem> calculateItemsCost(List<ReceiptItem> receiptItems) {
@@ -43,5 +43,9 @@ public class PosMachine {
                 .values()
                 .stream()
                 .collect(Collectors.toList());
+    }
+
+    public int calculateTotalPrice(List<ReceiptItem> receiptItems) {
+        return receiptItems.stream().mapToInt(ReceiptItem::getSubTotal).sum();
     }
 }
