@@ -1,6 +1,8 @@
 package pos.machine;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class PosMachine {
@@ -12,13 +14,14 @@ public class PosMachine {
 
     public List<ReceiptItem> decodeToItems(List<String> barcodes) {
         List<Item> items = loadAllItems();
-        return items.stream().map(item -> {
-            int count = (int) barcodes.stream().filter(barcode -> barcode.equals(item.getBarcode())).count();
-            if (count == 0) {
-                throw new RuntimeException("Item with barcode " + item.getBarcode() + " not found in the input barcodes.");
+        Map<String, Item> itemMap = items.stream().collect(Collectors.toMap(Item::getBarcode, item -> item));
+        return barcodes.stream().map(barcode -> {
+            if (!itemMap.containsKey(barcode)) {
+                throw new RuntimeException("Item with barcode " + barcode + " not found.");
             }
+            Item item = itemMap.get(barcode);
             return new ReceiptItem(item.getBarcode(), item.getName(), item.getPrice());
-        }).toList();
+        }).collect(Collectors.toList());
     }
 
     public List<Item> loadAllItems() {
@@ -31,19 +34,18 @@ public class PosMachine {
         return new Receipt(receiptItems1, totalPrice);
     }
 
+
     public List<ReceiptItem> calculateItemsCost(List<ReceiptItem> receiptItems) {
+        Map<String, Integer> countMap = receiptItems.stream().collect(Collectors.groupingBy(ReceiptItem::getBarcode, Collectors.collectingAndThen(Collectors.counting(), Long::intValue)));
         return receiptItems.stream()
-                .collect(Collectors.toMap(ReceiptItem::getBarcode,
-                        item -> new ReceiptItem(item.getBarcode(), item.getName(), item.getPrice(), item.getPrice()),
-                        (existing, incoming) -> new ReceiptItem(
-                                existing.getBarcode(),
-                                existing.getName(),
-                                existing.getPrice(),
-                                existing.getPrice() + incoming.getPrice()
-                        )
-                ))
-                .values()
+                .collect(Collectors.toMap(ReceiptItem::getBarcode, item -> item, (existing, incoming) -> existing, LinkedHashMap::new))
+                .entrySet()
                 .stream()
+                .map(entry -> {
+                    ReceiptItem item = entry.getValue();
+                    int count = countMap.get(item.getBarcode());
+                    return new ReceiptItem(item.getBarcode(), item.getName(), item.getPrice(),item.getPrice() * count);
+                })
                 .collect(Collectors.toList());
     }
 
@@ -53,8 +55,7 @@ public class PosMachine {
 
     public String renderReceipt(Receipt receipt) {
         String itemsReceipt = generateItemsReceipt(receipt);
-
-        return null;
+        return generateReceipt(itemsReceipt, receipt.getTotalPrice());
     }
 
     public String generateItemsReceipt(Receipt receipt) {
