@@ -63,4 +63,13 @@ public class PosMachine {
         }
         return sb.toString();
     }
+
+    public String generateReceipt(String itemsReceipt, int totalPrice) {
+        StringBuilder sb = new StringBuilder("***<store earning no money>Receipt***\n");
+        sb.append(itemsReceipt);
+        sb.append("----------------------\n");
+        sb.append(String.format("Total: %d (yuan)\n", totalPrice));
+        sb.append("**********************");
+        return sb.toString();
+    }
 }
