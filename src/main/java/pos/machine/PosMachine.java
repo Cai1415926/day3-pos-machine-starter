@@ -1,6 +1,7 @@
 package pos.machine;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class PosMachine {
     public String printReceipt(List<String> barcodes) {
@@ -29,10 +30,18 @@ public class PosMachine {
     }
 
     public List<ReceiptItem> calculateItemsCost(List<ReceiptItem> receiptItems) {
-        return receiptItems.stream().map(receiptItem -> {
-            int count = (int) receiptItems.stream()
-                    .filter(tmp -> tmp.getBarcode().equals(receiptItem.getBarcode())).count();
-            return new ReceiptItem(receiptItem.getBarcode(), receiptItem.getName(), receiptItem.getPrice(), receiptItem.getPrice() * count);
-        }).toList();
+        return receiptItems.stream()
+                .collect(Collectors.toMap(ReceiptItem::getBarcode,
+                        item -> new ReceiptItem(item.getBarcode(), item.getName(), item.getPrice(), item.getPrice()),
+                        (existing, incoming) -> new ReceiptItem(
+                                existing.getBarcode(),
+                                existing.getName(),
+                                existing.getPrice(),
+                                existing.getPrice() + incoming.getPrice()
+                        )
+                ))
+                .values()
+                .stream()
+                .collect(Collectors.toList());
     }
 }
